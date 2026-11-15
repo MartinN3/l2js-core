@@ -7,6 +7,8 @@ const types = [BufferValue.uint8, BufferValue.int8, BufferValue.uint16, BufferVa
 function make(Cls: any, type: any, offset: number) {
   const bytes = type.dtype.BYTES_PER_ELEMENT;
   const buffer = new ArrayBuffer(offset + bytes * 2 + 5);
+  const raw = new Uint8Array(buffer); raw.fill(0xa5);
+  for (let i = 0; i < bytes * 2; i++) raw[offset + i] = (7 + i * 31) & 255;
   const a = new Cls(type); a.array = new DataView(buffer, offset, bytes * 2);
   return { a, buffer, bytes };
 }
@@ -17,6 +19,8 @@ for (const Cls of [Baseline, Candidate, FPrimitiveArrayLazy]) for (const type of
     assert(v.length === 2 && v.byteLength === bytes*2, `${type.name} view length`);
     assert((offset % bytes === 0) === (v.buffer === buffer), `${type.name} sharing`);
     if (bytes > 1 && offset === 1) assert(v.byteOffset === 0, `${type.name} offset`);
+    const result = new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
+    for (let i = 0; i < result.length; i++) assert(result[i] === ((7 + i * 31) & 255), `${type.name} byte ${i}`);
     cases++;
   }
   const e = new Cls(type); e.array = null; assert(e.getTypedArray().length === 0, 'empty'); cases++;
