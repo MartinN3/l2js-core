@@ -1,0 +1,3 @@
+const path = require('path');
+const webpack = require('webpack');
+webpack({mode:'production',target:'web',entry:path.resolve('ci-cross-platform/test.ts'),output:{path:path.resolve('ci-cross-platform/out'),filename:'test.js'},resolve:{extensions:['.ts','.js'],alias:{'@base':path.resolve('../baseline/src'),'@fix':path.resolve('src')},fallback:{path:require.resolve('path-browserify')}},module:{rules:[{test:/\.ts$/,use:{loader:require.resolve('babel-loader'),options:{presets:[[require.resolve('@babel/preset-typescript'),{allowNamespaces:true,allowDeclareFields:true}]]}}}]}}).run((err,stats)=>{if(err||stats.hasErrors()){console.error(err||stats.toString({all:false,errors:true}));process.exitCode=1}else console.log(stats.toString({all:false,assets:true}));});

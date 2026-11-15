@@ -1,0 +1,3 @@
+const {chromium}=require('playwright');
+const path=require('path');
+(async()=>{const browser=await chromium.launch({channel:'chrome',headless:true,args:['--disable-gpu']}); try {const page=await browser.newPage();await page.setContent('<body></body>');await page.addScriptTag({path:path.resolve('ci-cross-platform/out/test.js')});const result=await page.evaluate(()=>globalThis.crossPlatformResult);if(!result||result.aligned.candidate.error||result.unaligned.candidate.error)throw new Error(JSON.stringify(result));console.log(JSON.stringify({platform:process.platform,arch:process.arch,node:process.version,chrome:browser.version(),result},null,2));} finally {await browser.close();}})().catch(e=>{console.error(e);process.exitCode=1});
