@@ -1,0 +1,33 @@
+name: Temporary Chrome cross-platform regression
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  chrome:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: candidate
+      - uses: actions/checkout@v4
+        with:
+          ref: b654f8bd53cf1c31eaaed5fcb3fea46f5c34d96c
+          path: baseline
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated benchmark dependencies
+        working-directory: candidate
+        run: |
+          npm ci --no-audit --no-fund
+          npm install --no-save --package-lock=false --no-audit --no-fund playwright
+      - name: Bundle and run real Chrome regression and benchmark
+        working-directory: candidate
+        run: |
+          node ci-cross-platform/build.cjs
+          node ci-cross-platform/run.cjs
