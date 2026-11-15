@@ -25,9 +25,20 @@ const sentinel = new Error('constructor sentinel');
 const bad:any = { ...BufferValue.uint32, dtype: class { static BYTES_PER_ELEMENT=4; constructor(){ throw sentinel; } } };
 try { make(Candidate,bad,0).a.getTypedArray(); throw new Error('missing throw'); } catch(e) { assert(e===sentinel,'error must propagate'); }
 function median(xs:number[]) { return xs.slice().sort((a,b)=>a-b)[Math.floor(xs.length/2)]; }
+class MinimalVariant extends (Baseline as any) {
+ getTypedArray():any {
+  const array=this.getArray();
+  try {return new this.Constructor.dtype(array.buffer,array.byteOffset,this.getElemCount());}
+  catch(error) {
+   if(error instanceof RangeError && array.byteOffset % this.Constructor.dtype.BYTES_PER_ELEMENT !== 0)
+    return new this.Constructor.dtype(this.getArrayBufferSlice());
+   throw error;
+  }
+ }
+}
 function bench(offset:number, count:number, rounds:number) {
- const variants = [{name:'baseline',a:make(Baseline,BufferValue.uint32,offset).a},{name:'candidate',a:make(Candidate,BufferValue.uint32,offset).a}];
- const samples:any={baseline:[],candidate:[]}, errors:any={}, sinks:any={baseline:0,candidate:0};
+ const variants = [{name:'baseline',a:make(Baseline,BufferValue.uint32,offset).a},{name:'baseline2',a:make(Baseline,BufferValue.uint32,offset).a},{name:'candidate',a:make(Candidate,BufferValue.uint32,offset).a},{name:'minimal',a:make(MinimalVariant,BufferValue.uint32,offset).a}];
+ const samples:any={baseline:[],baseline2:[],candidate:[],minimal:[]}, errors:any={}, sinks:any={baseline:0,baseline2:0,candidate:0,minimal:0};
  function run(v:any) {let sink=sinks[v.name];const start=performance.now();for(let i=0;i<count;i++){const r=v.a.getTypedArray();sink=(sink+r.byteOffset+r.length)|0;}sinks[v.name]=sink;return performance.now()-start;}
  for(let i=0;i<3;i++) for(const v of variants) try{run(v)}catch(e){errors[v.name]=String(e);}
  for(let i=0;i<rounds;i++) for(const v of (i%2 ? [...variants].reverse() : variants)) if(!errors[v.name]) try{samples[v.name].push(run(v))}catch(e){errors[v.name]=String(e)}
