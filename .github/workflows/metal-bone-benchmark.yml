@@ -1,0 +1,38 @@
+name: Temporary Metal skeleton setup benchmark
+on: [push, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          repository: realratchet/Lineage2JS
+          ref: a3a613b9439240a3155b4a5ba99c8f79ca760935
+          path: baseline
+      - uses: actions/checkout@v4
+        with:
+          repository: MartinN3/Lineage2JS
+          ref: fix/metal-bone-parent-cycle
+          path: candidate
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Install source extraction tools
+        working-directory: harness
+        run: npm install --no-save --package-lock=false --no-audit --no-fund @babel/parser @babel/core @babel/preset-typescript
+      - name: Benchmark production claimBones method on CPU
+        shell: bash
+        run: |
+          echo "baseline=$(git -C baseline rev-parse HEAD)"
+          echo "candidate=$(git -C candidate rev-parse HEAD)"
+          node --expose-gc harness/ci-cross-platform/metal-bone-benchmark.cjs baseline/src/objects/local-space-skeleton.ts candidate/src/objects/local-space-skeleton.ts
