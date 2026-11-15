@@ -362,16 +362,17 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
 
     public getTypedArray(): ReturnType<T> {
         const array = this.getArray();
-        const TypedArray = this.Constructor.dtype as TypedArrayConstructor_T;
         try {
-            return new TypedArray(array.buffer, array.byteOffset, this.getElemCount()) as ReturnType<T>;
+            // Preserve the existing constructor expression on the common
+            // aligned path. Only inspect alignment after construction fails.
+            return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
         } catch (error) {
-            // Keep the aligned fast path unchanged. Browser engines report
-            // unaligned package views with different RangeError messages.
-            if (!(error instanceof RangeError) || array.byteOffset % TypedArray.BYTES_PER_ELEMENT === 0)
-                throw error;
+            // Browser engines report unaligned package views with different
+            // RangeError messages, so check the offset rather than the text.
+            if (error instanceof RangeError && array.byteOffset % (this.Constructor.dtype as TypedArrayConstructor_T).BYTES_PER_ELEMENT !== 0)
+                return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
 
-            return new TypedArray(this.getArrayBufferSlice()) as ReturnType<T>;
+            throw error;
         }
     }
 
