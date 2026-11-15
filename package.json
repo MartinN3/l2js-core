@@ -6,7 +6,9 @@
     "types": "src/index.ts",
     "scripts": {
         "start": "node_modules/.bin/webpack build --config configs/development.config.js --watch",
-        "build-dev": "node_modules/.bin/webpack build --config configs/development.config.js"
+        "build-dev": "node_modules/.bin/webpack build --config configs/development.config.js",
+        "test:primitive-array-alignment": "node tests/run-primitive-array-alignment.cjs",
+        "test:primitive-array-alignment:webkit": "node tests/run-primitive-array-alignment.cjs --webkit"
     },
     "keywords": [],
     "author": "",
