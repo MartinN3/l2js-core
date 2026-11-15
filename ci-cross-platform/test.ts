@@ -11,7 +11,7 @@ function make(Cls: any, type: any, offset: number) {
   return { a, buffer, bytes };
 }
 let cases = 0;
-for (const Cls of [Candidate, FPrimitiveArrayLazy]) for (const type of types) {
+for (const Cls of [Baseline, Candidate, FPrimitiveArrayLazy]) for (const type of types) {
   for (const offset of [0, 1]) {
     const {a,buffer,bytes} = make(Cls,type,offset), v = a.getTypedArray();
     assert(v.length === 2 && v.byteLength === bytes*2, `${type.name} view length`);
