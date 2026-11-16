@@ -362,15 +362,11 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
 
     public getTypedArray(): ReturnType<T> {
         const array = this.getArray();
-        const TypedArray = this.Constructor.dtype as TypedArrayConstructor_T;
 
-        // DataView offsets can be unaligned when a primitive array follows a
-        // variable-length package field. Detect this before constructing the
-        // view, since browser error text differs for the same RangeError.
-        if (array.byteOffset % TypedArray.BYTES_PER_ELEMENT !== 0)
-            return new TypedArray(this.getArrayBufferSlice()) as ReturnType<T>;
+        if (array.byteOffset % this.Constructor.bytes !== 0)
+            return new (this.Constructor.dtype as TypedArrayConstructor_T)(this.getArrayBufferSlice()) as any;
 
-        return new TypedArray(array.buffer, array.byteOffset, this.getElemCount()) as ReturnType<T>;
+        return new (this.Constructor.dtype as any)(array.buffer, array.byteOffset, this.getElemCount()) as any;
     }
 
     public getByteLength() { return this.array ? this.array.byteLength : 0; }
@@ -388,10 +384,7 @@ class FPrimitiveArray<T extends AllPrimitiveNumberTypes_T> implements Constructa
     }
 }
 
-type TypedArrayConstructor_T = {
-    new (buffer: ArrayBufferLike, byteOffset?: number, length?: number): ArrayBufferView;
-    readonly BYTES_PER_ELEMENT: number;
-};
+type TypedArrayConstructor_T = new (buffer: ArrayBufferLike, byteOffset?: number, length?: number) => ArrayBufferView;
 type ReturnType<T extends PrimitiveNumberTypes_T | BigNumberTypes_T> =
     | T extends "uint8" ? Uint8Array
     : T extends "int8" ? Int8Array
